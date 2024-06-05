@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'TruckListPage.dart';
+import 'map.dart';
 
 void main() {
   runApp(TruckItApp());
@@ -19,25 +20,30 @@ class TruckItApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatelessWidget {
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('TruckIt'),
-        backgroundColor: Colors.orange,
+        backgroundColor: const Color(0xFF1C1C1E),
         actions: [
           IconButton(
             icon: Icon(Icons.search),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => TruckListPage()),  
+                MaterialPageRoute(builder: (context) => TruckListPage()),
               );
             },
           ),
         ],
       ),
-      body: Center(
-        
+      body: Column(
+        children: [
+          Expanded(
+            child: MapScreen(),
+          ),
+        ],
       ),
     );
   }

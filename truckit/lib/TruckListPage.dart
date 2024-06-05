@@ -30,7 +30,7 @@ class _TruckListPageState extends State<TruckListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('List of Trucks'),
-        backgroundColor: Colors.orange,
+        backgroundColor: const Color(0xFF1C1C1E),
       ),
       body: Column(
         children: [

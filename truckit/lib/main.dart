@@ -23,7 +23,7 @@ class MyHomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('TruckIt'),
-        backgroundColor: Colors.orange,
+        backgroundColor: const Color(0xFF1C1C1E),
         actions: [
           IconButton(
             icon: Icon(Icons.search),

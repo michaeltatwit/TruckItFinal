@@ -1,1 +1,0 @@
- /Users/nick/Documents/development/TruckIt/truckit-customer-app/.dart_tool/flutter_build/09d4049103c6290a2d1cf6a86e90c78a/native_assets.yaml: 

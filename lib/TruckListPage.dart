@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TruckListPage extends StatefulWidget {
   @override
@@ -6,7 +7,6 @@ class TruckListPage extends StatefulWidget {
 }
 
 class _TruckListPageState extends State<TruckListPage> {
-  final List<String> trucks = ['Truck 1', 'Truck 2', 'Truck 3', 'Truck 4'];
   String searchQuery = '';
   String selectedFoodType = 'All';
   String selectedRadius = '5 miles';
@@ -14,19 +14,6 @@ class _TruckListPageState extends State<TruckListPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Filters the list of trucks based on the search query and selected filters.
-    List<String> filteredTrucks = trucks.where((truck) {
-      return truck.toLowerCase().contains(searchQuery.toLowerCase()) &&
-          (selectedFoodType == 'All' || truck.contains(selectedFoodType));
-    }).toList();
-
-    // Sorts the filtered trucks based on the selected sorting option.
-    if (selectedSortOption == 'Alphabetical') {
-      filteredTrucks.sort();
-    } else if (selectedSortOption == 'Reverse Alphabetical') {
-      filteredTrucks.sort((a, b) => b.compareTo(a));
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('List of Trucks'),
@@ -70,7 +57,7 @@ class _TruckListPageState extends State<TruckListPage> {
                         });
                       }
                     },
-                    items: <String>['All', 'Mexican', 'Chinese', 'Italian', 'BBQ']
+                    items: <String>['All', 'Mexican', 'Chinese', 'Italian', 'BBQ', 'Ice Cream']
                         .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
@@ -120,18 +107,179 @@ class _TruckListPageState extends State<TruckListPage> {
               ),
             ),
           ),
-          // List of filtered trucks
+          // List of trucks
           Expanded(
-            child: ListView.builder(
-              itemCount: filteredTrucks.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(filteredTrucks[index]),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('companies').snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  print("No data found in companies collection.");
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                var companies = snapshot.data!.docs;
+
+                if (companies.isEmpty) {
+                  print("No companies found.");
+                }
+
+                return ListView.builder(
+                  itemCount: companies.length,
+                  itemBuilder: (context, index) {
+                    var company = companies[index];
+                    var trucksCollection = company.reference.collection('trucks').snapshots();
+                    return StreamBuilder<QuerySnapshot>(
+                      stream: trucksCollection,
+                      builder: (context, truckSnapshot) {
+                        if (!truckSnapshot.hasData) {
+                          print("No data found in trucks collection for company ${company.id}.");
+                          return Center(child: CircularProgressIndicator());
+                        }
+
+                        var trucks = truckSnapshot.data!.docs;
+
+                        if (trucks.isEmpty) {
+                          print("No trucks found for company ${company.id}.");
+                        }
+
+                        return Column(
+                          children: trucks.map((truck) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                              child: Card(
+                                elevation: 3.0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10.0),
+                                ),
+                                child: ListTile(
+                                  // leading: CircleAvatar(
+                                  //   backgroundImage: NetworkImage(truck['profile_image'] ?? 'https://via.placeholder.com/150'),
+                                  // ),
+                                  title: Text(
+                                    truck['name'],
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18.0,
+                                    ),
+                                  ),
+                                  // subtitle: Text(
+                                  //   truck['profile'] ?? 'No profile',
+                                  //   maxLines: 2,
+                                  //   overflow: TextOverflow.ellipsis,
+                                  // ),
+                                  trailing: Icon(Icons.arrow_forward_ios),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => TruckDetailPage(companyId: company.id, truck: truck),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class TruckDetailPage extends StatelessWidget {
+  final String companyId;
+  final QueryDocumentSnapshot truck;
+
+  TruckDetailPage({required this.companyId, required this.truck});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(truck['name']),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              truck['name'],
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            // Display truck profile if available
+            // Text(
+            //   truck['profile'] ?? 'No profile description',
+            //   style: TextStyle(fontSize: 16),
+            // ),
+            SizedBox(height: 16),
+            Text(
+              'Menu',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('companies')
+                    .doc(companyId)
+                    .collection('trucks')
+                    .doc(truck.id)
+                    .collection('sections')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    print("No data found in sections collection for truck ${truck.id}.");
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  var sections = snapshot.data!.docs;
+                  return ListView.builder(
+                    itemCount: sections.length,
+                    itemBuilder: (context, index) {
+                      var section = sections[index];
+                      return ExpansionTile(
+                        title: Text(section['name']),
+                        children: [
+                          StreamBuilder<QuerySnapshot>(
+                            stream: section.reference.collection('items').snapshots(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                print("No data found in items collection for section ${section.id}.");
+                                return Center(child: CircularProgressIndicator());
+                              }
+                              var items = snapshot.data!.docs;
+                              return ListView.builder(
+                                shrinkWrap: true,
+                                physics: NeverScrollableScrollPhysics(),
+                                itemCount: items.length,
+                                itemBuilder: (context, index) {
+                                  var item = items[index];
+                                  return ListTile(
+                                    title: Text(item['name']),
+                                    subtitle: Text(item['description']),
+                                    trailing: Text('\$${item['price']}'),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

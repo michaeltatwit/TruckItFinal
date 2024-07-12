@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MapPage extends StatefulWidget {
@@ -15,18 +16,59 @@ class _MapPageState extends State<MapPage> {
   final Location _locationController = Location();
   final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
   LatLng? _currentPosition;
-
   Set<Marker> _markers = {};
+  late DatabaseReference _truckLocationsRef;
+  late StreamSubscription<DatabaseEvent> _truckLocationsSubscription;
 
   @override
   void initState() {
     super.initState();
     _checkPermissionsAndLocationServices();
+    _initializeFirebaseDatabase();
   }
 
-  /// Loads the custom map style.
+  @override
+  void dispose() {
+    _truckLocationsSubscription.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initializeFirebaseDatabase() async {
+    _truckLocationsRef = FirebaseDatabase.instance.ref().child('truck_locations');
+    _truckLocationsSubscription = _truckLocationsRef.onValue.listen((event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (data != null) {
+        _updateTruckMarkers(data);
+      }
+    });
+  }
+
+  void _updateTruckMarkers(Map<dynamic, dynamic> data) {
+    final markers = <Marker>{};
+    data.forEach((companyId, trucks) {
+      trucks.forEach((truckId, location) {
+        final lat = location['latitude'];
+        final lng = location['longitude'];
+        final marker = Marker(
+          markerId: MarkerId(truckId),
+          position: LatLng(lat, lng),
+          infoWindow: InfoWindow(
+            title: 'Truck $truckId',
+            snippet: 'Tap to navigate',
+            onTap: () {
+              _showNavigationDialog(LatLng(lat, lng));
+            },
+          ),
+        );
+        markers.add(marker);
+      });
+    });
+    setState(() {
+      _markers = markers;
+    });
+  }
+
   Future<void> _loadMapStyle(GoogleMapController controller) async {
-    final String mapStyleId = 'f0710ee8169c5348';
     final String mapStyle = '''
     [
       {
@@ -56,7 +98,6 @@ class _MapPageState extends State<MapPage> {
                 onMapCreated: (GoogleMapController controller) {
                   _mapController.complete(controller);
                   _loadMapStyle(controller); // Apply the map style when the map is created
-                  _addMarkers(); // Add markers when the map is created
                 },
                 initialCameraPosition: CameraPosition(
                   target: _currentPosition!,
@@ -70,7 +111,6 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  /// Checks permissions and enables location services if necessary.
   Future<void> _checkPermissionsAndLocationServices() async {
     bool serviceEnabled;
     PermissionStatus permissionGranted;
@@ -97,26 +137,6 @@ class _MapPageState extends State<MapPage> {
     });
   }
 
-  /// Adds markers to the map.
-  void _addMarkers() {
-    setState(() {
-      _markers.add(
-        Marker(
-          markerId: MarkerId('marker_1'),
-          position: LatLng(_currentPosition!.latitude + 0.01, _currentPosition!.longitude + 0.01),
-          infoWindow: InfoWindow(
-            title: 'Destination',
-            snippet: 'Tap to navigate',
-            onTap: () {
-              _showNavigationDialog(LatLng(_currentPosition!.latitude + 0.01, _currentPosition!.longitude + 0.01));
-            },
-          ),
-        ),
-      );
-    });
-  }
-
-  /// Shows a dialog to confirm navigation to the destination.
   void _showNavigationDialog(LatLng destination) {
     showDialog(
       context: context,
@@ -144,7 +164,6 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  /// Launches Google Maps navigation to the specified destination.
   Future<void> _launchGoogleMapsNavigation(LatLng destination) async {
     try {
       final String googleMapsUrl = 'https://www.google.com/maps/dir/?api=1&destination=${destination.latitude},${destination.longitude}&travelmode=driving';
@@ -160,7 +179,6 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  /// Shows an error dialog if navigation fails.
   void _showErrorDialog() {
     showDialog(
       context: context,

@@ -1,9 +1,15 @@
 import 'dart:async';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image/image.dart' as img;
 import 'package:url_launcher/url_launcher.dart';
+import 'TruckListPage.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -16,56 +22,39 @@ class _MapPageState extends State<MapPage> {
   final Location _locationController = Location();
   final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
   LatLng? _currentPosition;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   Set<Marker> _markers = {};
-  late DatabaseReference _truckLocationsRef;
-  late StreamSubscription<DatabaseEvent> _truckLocationsSubscription;
+  StreamSubscription<DatabaseEvent>? _locationSubscription;
+  Map<String, String> _truckNames = {};
 
   @override
   void initState() {
     super.initState();
     _checkPermissionsAndLocationServices();
-    _initializeFirebaseDatabase();
+    _fetchTruckNames();
+    _startListeningToTruckLocations();
   }
 
   @override
   void dispose() {
-    _truckLocationsSubscription.cancel();
+    _locationSubscription?.cancel();
     super.dispose();
   }
 
-  Future<void> _initializeFirebaseDatabase() async {
-    _truckLocationsRef = FirebaseDatabase.instance.ref().child('truck_locations');
-    _truckLocationsSubscription = _truckLocationsRef.onValue.listen((event) {
-      final data = event.snapshot.value as Map<dynamic, dynamic>?;
-      if (data != null) {
-        _updateTruckMarkers(data);
+  Future<void> _fetchTruckNames() async {
+    try {
+      QuerySnapshot snapshot = await _firestore.collection('companies').doc('your_company_id').collection('trucks').get();
+      Map<String, String> truckNames = {};
+      for (var doc in snapshot.docs) {
+        truckNames[doc.id] = doc['name'];
       }
-    });
-  }
-
-  void _updateTruckMarkers(Map<dynamic, dynamic> data) {
-    final markers = <Marker>{};
-    data.forEach((companyId, trucks) {
-      trucks.forEach((truckId, location) {
-        final lat = location['latitude'];
-        final lng = location['longitude'];
-        final marker = Marker(
-          markerId: MarkerId(truckId),
-          position: LatLng(lat, lng),
-          infoWindow: InfoWindow(
-            title: 'Truck $truckId',
-            snippet: 'Tap to navigate',
-            onTap: () {
-              _showNavigationDialog(LatLng(lat, lng));
-            },
-          ),
-        );
-        markers.add(marker);
+      setState(() {
+        _truckNames = truckNames;
       });
-    });
-    setState(() {
-      _markers = markers;
-    });
+    } catch (e) {
+      print('Error fetching truck names: $e');
+    }
   }
 
   Future<void> _loadMapStyle(GoogleMapController controller) async {
@@ -89,15 +78,13 @@ class _MapPageState extends State<MapPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _currentPosition == null
-          ? const Center(
-              child: CircularProgressIndicator(),
-            )
+          ? const Center(child: CircularProgressIndicator())
           : Padding(
-              padding: const EdgeInsets.only(bottom: 16.0), // Adding some padding at the bottom
+              padding: const EdgeInsets.only(bottom: 16.0),
               child: GoogleMap(
                 onMapCreated: (GoogleMapController controller) {
                   _mapController.complete(controller);
-                  _loadMapStyle(controller); // Apply the map style when the map is created
+                  _loadMapStyle(controller);
                 },
                 initialCameraPosition: CameraPosition(
                   target: _currentPosition!,
@@ -137,13 +124,71 @@ class _MapPageState extends State<MapPage> {
     });
   }
 
-  void _showNavigationDialog(LatLng destination) {
+  void _startListeningToTruckLocations() {
+    final DatabaseReference truckLocationsRef = FirebaseDatabase.instance.ref('truck_locations');
+
+    _locationSubscription = truckLocationsRef.onValue.listen((DatabaseEvent event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>?;
+
+      if (data != null) {
+        _updateMarkers(data);
+      } else {
+        setState(() {
+          _markers.clear();
+        });
+      }
+    });
+  }
+
+  Future<BitmapDescriptor> _createCustomMarkerBitmap(String imagePath) async {
+    final ByteData data = await rootBundle.load(imagePath);
+    final Uint8List bytes = data.buffer.asUint8List();
+    final img.Image? image = img.decodeImage(bytes);
+    final img.Image resizedImage = img.copyResize(image!, width: 100, height: 100); // Adjust width and height as needed
+    final ByteData byteData = ByteData.sublistView(Uint8List.fromList(img.encodePng(resizedImage)));
+    return BitmapDescriptor.fromBytes(byteData.buffer.asUint8List());
+  }
+
+  void _updateMarkers(Map<dynamic, dynamic> data) async {
+    Set<Marker> newMarkers = {};
+
+    for (var companyId in data.keys) {
+      var companyData = data[companyId];
+      for (var truckId in companyData.keys) {
+        var truckData = companyData[truckId];
+        if (truckData != null) {
+          final LatLng position = LatLng(truckData['latitude'], truckData['longitude']);
+          final String truckName = _truckNames[truckId] ?? 'Truck $truckId';
+          final BitmapDescriptor markerIcon = await _createCustomMarkerBitmap('assets/image.png');
+          final Marker marker = Marker(
+            markerId: MarkerId('$companyId-$truckId'),
+            position: position,
+            icon: markerIcon,
+            infoWindow: InfoWindow(
+              title: truckName,
+              snippet: 'Tap to navigate or view profile',
+              onTap: () {
+                _showNavigationOrProfileDialog(position, companyId, truckId);
+              },
+            ),
+          );
+          newMarkers.add(marker);
+        }
+      }
+    }
+
+    setState(() {
+      _markers = newMarkers;
+    });
+  }
+
+  void _showNavigationOrProfileDialog(LatLng destination, String companyId, String truckId) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Navigate to Destination'),
-          content: Text('Do you want to navigate to this destination?'),
+          title: Text('Navigate or View Profile'),
+          content: Text('Do you want to navigate to this destination or view the profile?'),
           actions: <Widget>[
             TextButton(
               child: Text('Cancel'),
@@ -152,10 +197,17 @@ class _MapPageState extends State<MapPage> {
               },
             ),
             TextButton(
-              child: Text('Yes'),
+              child: Text('Navigate'),
               onPressed: () async {
                 Navigator.of(context).pop();
-                await _launchGoogleMapsNavigation(destination); // Await the async call and add logging
+                await _launchGoogleMapsNavigation(destination);
+              },
+            ),
+            TextButton(
+              child: Text('View Profile'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _navigateToTruckProfile(companyId, truckId);
               },
             ),
           ],
@@ -174,7 +226,7 @@ class _MapPageState extends State<MapPage> {
         _showErrorDialog();
       }
     } catch (e) {
-      print('Error launching Google Maps: $e'); // Log the error
+      print('Error launching Google Maps: $e');
       _showErrorDialog();
     }
   }
@@ -196,6 +248,15 @@ class _MapPageState extends State<MapPage> {
           ],
         );
       },
+    );
+  }
+
+  void _navigateToTruckProfile(String companyId, String truckId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TruckDetailPage(companyId: companyId, truckId: truckId),
+      ),
     );
   }
 }

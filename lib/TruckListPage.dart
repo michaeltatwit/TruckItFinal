@@ -216,11 +216,11 @@ class _TruckListPageState extends State<TruckListPage> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) =>
-                                              TruckDetailPage(companyId: company.id, truck: truck),
+                                          builder: (context) => TruckDetailPage(companyId: company.id, truckId: truck.id),
                                         ),
                                       );
                                     },
+
                                   ),
                                 );
                               },
@@ -242,15 +242,15 @@ class _TruckListPageState extends State<TruckListPage> {
 
 class TruckDetailPage extends StatelessWidget {
   final String companyId;
-  final QueryDocumentSnapshot truck;
+  final String truckId;
 
-  TruckDetailPage({required this.companyId, required this.truck});
+  TruckDetailPage({required this.companyId, required this.truckId});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(truck['name']),
+        title: Text('Truck Details'),
         backgroundColor: const Color(0xFF1C1C1E),
       ),
       backgroundColor: const Color(0xFF1C1C1E),
@@ -259,13 +259,27 @@ class TruckDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              truck['name'],
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+            FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance.collection('companies').doc(companyId).collection('trucks').doc(truckId).get(),
+              builder: (context, truckSnapshot) {
+                if (!truckSnapshot.hasData) {
+                  return Text('Loading truck details...', style: TextStyle(color: Colors.white));
+                }
+
+                var truck = truckSnapshot.data;
+                var truckName = truck != null && truck.exists
+                    ? truck['name'] ?? 'No name'
+                    : 'No name';
+
+                return Text(
+                  truckName,
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                );
+              },
             ),
             SizedBox(height: 8),
             FutureBuilder<DocumentSnapshot>(
-              future: truck.reference.collection('profile').doc('profile').get(),
+              future: FirebaseFirestore.instance.collection('companies').doc(companyId).collection('trucks').doc(truckId).collection('profile').doc('profile').get(),
               builder: (context, profileSnapshot) {
                 if (!profileSnapshot.hasData) {
                   return Text('Loading profile...', style: TextStyle(color: Colors.white));
@@ -293,7 +307,7 @@ class TruckDetailPage extends StatelessWidget {
                     .collection('companies')
                     .doc(companyId)
                     .collection('trucks')
-                    .doc(truck.id)
+                    .doc(truckId)
                     .collection('sections')
                     .snapshots(),
                 builder: (context, snapshot) {

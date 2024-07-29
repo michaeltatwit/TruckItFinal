@@ -18,8 +18,8 @@ class _TruckListPageState extends State<TruckListPage> {
       appBar: AppBar(
         title: const Text('List of Trucks'),
         backgroundColor: const Color(0xFF1C1C1E),
-        iconTheme: IconThemeData(
-          color: Colors.grey[300],
+        iconTheme: const IconThemeData(
+          color: Color.fromARGB(255, 216, 255, 206),
         ),
       ),
       backgroundColor: const Color(0xFF1C1C1E),
@@ -28,22 +28,44 @@ class _TruckListPageState extends State<TruckListPage> {
           // Search bar
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                labelText: 'Search',
-                prefixIcon: Icon(Icons.search, color: Colors.grey[700]),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+            child: Theme(
+              data: ThemeData(
+                primaryColor: Color.fromARGB(255, 216, 255, 206), // Green tint
+                textSelectionTheme: TextSelectionThemeData(
+                  cursorColor: Color.fromARGB(255, 216, 255, 206), // Green cursor
+                  selectionColor: Color.fromARGB(255, 216, 255, 206).withOpacity(0.5), // Green selection color
+                  selectionHandleColor: Color.fromARGB(255, 216, 255, 206), // Green selection handle
                 ),
-                filled: true,
-                
-                fillColor: Colors.black,
+                colorScheme: ColorScheme.fromSwatch().copyWith(
+                  primary: Color.fromARGB(255, 216, 255, 206), // Green loading animation
+                ),
               ),
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-              },
+              child: TextField(
+                decoration: InputDecoration(
+                  labelText: 'Search',
+                  labelStyle: TextStyle(color: Colors.grey), // Default label color
+                  prefixIcon: Icon(Icons.search, color: Colors.grey[700]),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color.fromARGB(255, 216, 255, 206), width: 2.0), // Color when focused
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Colors.grey), // Border color when enabled
+                  ),
+                  filled: true,
+                  fillColor: Colors.black,
+                ),
+                style: const TextStyle(color: Colors.white), // Text color
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value;
+                  });
+                },
+              ),
             ),
           ),
           // Filter dropdowns
@@ -55,8 +77,8 @@ class _TruckListPageState extends State<TruckListPage> {
                 children: [
                   // Dropdown for selecting food type
                   Container(
-                    width: 150,
-                    child: DropdownButton<String>(
+                    width: MediaQuery.of(context).size.width * 0.3,
+                    child: DropdownButtonFormField<String>(
                       value: selectedFoodType,
                       onChanged: (String? newValue) {
                         if (newValue != null) {
@@ -65,27 +87,36 @@ class _TruckListPageState extends State<TruckListPage> {
                           });
                         }
                       },
-                      items: <String>['All', 'Mexican', 'Chinese', 'Italian', 'BBQ', 'Ice Cream']
+                      items: <String>['All', 'Live', 'Not Live']
                           .map<DropdownMenuItem<String>>((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
                           child: Text(value),
                         );
                       }).toList(),
-                      dropdownColor: Color(0xFF4CAF50), // Green tint
-                      style: TextStyle(color: Colors.white),
-                      icon: Icon(Icons.arrow_drop_down, color: Colors.white),
-                      underline: Container(
-                        height: 2,
-                        color: Colors.white,
+                      decoration: const InputDecoration(
+                        filled: true,
+                        fillColor: Color(0xFF1C1C1E), // Green tint
+                        border: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white, width: 1.0),
+                        ),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white, width: 1.0),
+                        ),
                       ),
+                      dropdownColor: const Color(0xFF1C1C1E),
+                      style: const TextStyle(color: Colors.white),
+                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
                     ),
                   ),
                   SizedBox(width: 8),
                   // Dropdown for selecting search radius
                   Container(
-                    width: 150,
-                    child: DropdownButton<String>(
+                    width: MediaQuery.of(context).size.width * 0.3,
+                    child: DropdownButtonFormField<String>(
                       value: selectedRadius,
                       onChanged: (String? newValue) {
                         if (newValue != null) {
@@ -101,20 +132,29 @@ class _TruckListPageState extends State<TruckListPage> {
                           child: Text(value),
                         );
                       }).toList(),
-                      dropdownColor: Color.fromARGB(255, 149, 200, 148), // Green tint
-                      style: TextStyle(color: Colors.white),
-                      icon: Icon(Icons.arrow_drop_down, color: Colors.white),
-                      underline: Container(
-                        height: 2,
-                        color: Colors.white,
+                      decoration: const InputDecoration(
+                        filled: true,
+                        fillColor: Color(0xFF1C1C1E), // Green tint
+                        border: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white, width: 1.0),
+                        ),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white, width: 1.0),
+                        ),
                       ),
+                      dropdownColor: Color.fromARGB(255, 163, 218, 163), // Green tint
+                      style: const TextStyle(color: Colors.white),
+                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
                     ),
                   ),
                   SizedBox(width: 8),
                   // Dropdown for selecting sort option
                   Container(
-                    width: 150,
-                    child: DropdownButton<String>(
+                    width: MediaQuery.of(context).size.width * 0.3,
+                    child: DropdownButtonFormField<String>(
                       value: selectedSortOption,
                       onChanged: (String? newValue) {
                         if (newValue != null) {
@@ -130,13 +170,22 @@ class _TruckListPageState extends State<TruckListPage> {
                           child: Text(value),
                         );
                       }).toList(),
-                      dropdownColor: Color.fromARGB(255, 138, 255, 120), // Green tint
-                      style: TextStyle(color: Colors.white),
-                      icon: Icon(Icons.arrow_drop_down, color: Colors.white),
-                      underline: Container(
-                        height: 2,
-                        color: Colors.white,
+                      decoration: const InputDecoration(
+                        filled: true,
+                        fillColor: Color(0xFF1C1C1E),
+                        border: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white),
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white, width: 1.0),
+                        ),
+                        enabledBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white, width: 1.0),
+                        ),
                       ),
+                      dropdownColor: const Color.fromARGB(255, 206, 255, 206), // Green tint
+                      style: const TextStyle(color: Colors.white),
+                      icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
                     ),
                   ),
                 ],
@@ -193,8 +242,7 @@ class _TruckListPageState extends State<TruckListPage> {
                                     borderRadius: BorderRadius.circular(15),
                                   ),
                                   elevation: 5,
-                                  // color: Color.fromARGB(255, 148, 221, 137), // Green tint
-                                  color: Color.fromARGB(255, 163, 218, 163),
+                                  color: Color.fromARGB(255, 216, 255, 206), // Green tint
                                   margin: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
                                   child: ListTile(
                                     leading: CircleAvatar(
@@ -212,6 +260,7 @@ class _TruckListPageState extends State<TruckListPage> {
                                       ),
                                     ),
                                     subtitle: Text(description),
+                                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.black), // Add the arrow here
                                     onTap: () {
                                       Navigator.push(
                                         context,
@@ -344,7 +393,7 @@ class TruckDetailPage extends StatelessWidget {
                                   return ListTile(
                                     title: Text(item['name'], style: TextStyle(color: Colors.white)),
                                     subtitle: Text(item['description'], style: TextStyle(color: Colors.white)),
-                                    trailing: Text('\$${item['price']}', style: TextStyle(color: Colors.white)),
+                                    trailing: Text('\$${item['price']}.0', style: TextStyle(color: Colors.white)),
                                   );
                                 },
                               );

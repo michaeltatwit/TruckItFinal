@@ -1,18 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:truckit_customer_app/map_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'TruckListPage.dart';
+import 'map_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await _authenticateAnonymously(); // Authenticate the user anonymously
   runApp(TruckItApp());
 }
 
-/// The main entry point of the TruckIt application.
+Future<void> _authenticateAnonymously() async {
+  try {
+    await FirebaseAuth.instance.signInAnonymously();
+  } catch (e) {
+    print('Failed to sign in anonymously: $e');
+  }
+}
+
 class TruckItApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -26,7 +35,6 @@ class TruckItApp extends StatelessWidget {
   }
 }
 
-/// The main page of the TruckIt application.
 class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {

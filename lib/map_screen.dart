@@ -26,13 +26,11 @@ class _MapPageState extends State<MapPage> {
 
   Set<Marker> _markers = {};
   StreamSubscription<DatabaseEvent>? _locationSubscription;
-  Map<String, String> _truckNames = {};
 
   @override
   void initState() {
     super.initState();
     _checkPermissionsAndLocationServices();
-    _fetchTruckNames();
     _startListeningToTruckLocations();
   }
 
@@ -40,21 +38,6 @@ class _MapPageState extends State<MapPage> {
   void dispose() {
     _locationSubscription?.cancel();
     super.dispose();
-  }
-
-  Future<void> _fetchTruckNames() async {
-    try {
-      QuerySnapshot snapshot = await _firestore.collection('companies').doc('your_company_id').collection('trucks').get();
-      Map<String, String> truckNames = {};
-      for (var doc in snapshot.docs) {
-        truckNames[doc.id] = doc['name'];
-      }
-      setState(() {
-        _truckNames = truckNames;
-      });
-    } catch (e) {
-      print('Error fetching truck names: $e');
-    }
   }
 
   Future<void> _loadMapStyle(GoogleMapController controller) async {
@@ -158,7 +141,7 @@ class _MapPageState extends State<MapPage> {
         var truckData = companyData[truckId];
         if (truckData != null) {
           final LatLng position = LatLng(truckData['latitude'], truckData['longitude']);
-          final String truckName = _truckNames[truckId] ?? 'Truck $truckId';
+          final String truckName = await _getTruckName(companyId, truckId);
           final BitmapDescriptor markerIcon = await _createCustomMarkerBitmap('assets/image.png');
           final Marker marker = Marker(
             markerId: MarkerId('$companyId-$truckId'),
@@ -180,6 +163,16 @@ class _MapPageState extends State<MapPage> {
     setState(() {
       _markers = newMarkers;
     });
+  }
+
+  Future<String> _getTruckName(String companyId, String truckId) async {
+    try {
+      DocumentSnapshot snapshot = await _firestore.collection('companies').doc(companyId).collection('trucks').doc(truckId).get();
+      return snapshot['name'];
+    } catch (e) {
+      print('Error fetching truck name: $e');
+      return 'Truck $truckId';
+    }
   }
 
   void _showNavigationOrProfileDialog(LatLng destination, String companyId, String truckId) {

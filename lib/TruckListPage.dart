@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class TruckListPage extends StatefulWidget {
   @override
@@ -11,6 +12,20 @@ class _TruckListPageState extends State<TruckListPage> {
   String selectedFoodType = 'All';
   String selectedRadius = '5 miles';
   String selectedSortOption = 'Alphabetical';
+
+  Stream<Map<String, bool>> getLiveStatuses() {
+    return FirebaseDatabase.instance.ref('truck_locations').onValue.map((event) {
+      Map<String, bool> liveStatuses = {};
+      if (event.snapshot.value != null) {
+        (event.snapshot.value as Map).forEach((companyId, trucks) {
+          (trucks as Map).forEach((truckId, _) {
+            liveStatuses['$companyId/$truckId'] = true;
+          });
+        });
+      }
+      return liveStatuses;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -203,78 +218,131 @@ class _TruckListPageState extends State<TruckListPage> {
 
                 var companies = snapshot.data!.docs;
 
-                return ListView.builder(
-                  itemCount: companies.length,
-                  itemBuilder: (context, index) {
-                    var company = companies[index];
-                    var trucksCollection = company.reference.collection('trucks').snapshots();
-                    return StreamBuilder<QuerySnapshot>(
-                      stream: trucksCollection,
-                      builder: (context, truckSnapshot) {
-                        if (!truckSnapshot.hasData) {
-                          return Center(child: CircularProgressIndicator());
-                        }
+                return StreamBuilder<Map<String, bool>>(
+                  stream: getLiveStatuses(),
+                  builder: (context, liveSnapshot) {
+                    if (!liveSnapshot.hasData) {
+                      return Center(child: CircularProgressIndicator());
+                    }
 
-                        var trucks = truckSnapshot.data!.docs;
+                    var liveStatuses = liveSnapshot.data!;
 
-                        return Column(
-                          children: trucks.map((truck) {
-                            return FutureBuilder<DocumentSnapshot>(
-                              future: truck.reference.collection('profile').doc('profile').get(),
-                              builder: (context, profileSnapshot) {
-                                if (!profileSnapshot.hasData) {
-                                  return ListTile(
-                                    title: Text(truck['name']),
-                                    subtitle: Text('Loading...'),
-                                  );
-                                }
+                    return ListView.builder(
+                      itemCount: companies.length,
+                      itemBuilder: (context, index) {
+                        var company = companies[index];
+                        var trucksCollection = company.reference.collection('trucks').snapshots();
 
-                                var profile = profileSnapshot.data;
-                                var description = profile != null && profile.exists
-                                    ? profile['description'] ?? 'No description'
-                                    : 'No description';
-                                var imageUrl = profile != null && profile.exists
-                                    ? profile['imageUrl'] ?? ''
-                                    : '';
+                        return StreamBuilder<QuerySnapshot>(
+                          stream: trucksCollection,
+                          builder: (context, truckSnapshot) {
+                            if (!truckSnapshot.hasData) {
+                              return Center(child: CircularProgressIndicator());
+                            }
 
-                                return Card(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                  elevation: 5,
-                                  color: Color.fromARGB(255, 216, 255, 206), // Green tint
-                                  margin: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                                  child: ListTile(
-                                    leading: CircleAvatar(
-                                      radius: 30,
-                                      backgroundImage: imageUrl.isNotEmpty
-                                          ? NetworkImage(imageUrl)
-                                          : AssetImage('assets/default_truck.png') as ImageProvider,
-                                      backgroundColor: Colors.grey[200],
-                                    ),
-                                    title: Text(
-                                      truck['name'],
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                      ),
-                                    ),
-                                    subtitle: Text(description),
-                                    trailing: const Icon(Icons.arrow_forward_ios, color: Colors.black), // Add the arrow here
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => TruckDetailPage(companyId: company.id, truckId: truck.id),
-                                        ),
+                            var trucks = truckSnapshot.data!.docs;
+
+                            return Column(
+                              children: trucks.map((truck) {
+                                return FutureBuilder<DocumentSnapshot>(
+                                  future: truck.reference.collection('profile').doc('profile').get(),
+                                  builder: (context, profileSnapshot) {
+                                    if (!profileSnapshot.hasData) {
+                                      return ListTile(
+                                        title: Text(truck['name']),
+                                        subtitle: Text('Loading...'),
                                       );
-                                    },
+                                    }
 
-                                  ),
+                                    var profile = profileSnapshot.data;
+                                    var description = profile != null && profile.exists
+                                        ? profile['description'] ?? 'No description'
+                                        : 'No description';
+                                    var imageUrl = profile != null && profile.exists
+                                        ? profile['imageUrl'] ?? ''
+                                        : '';
+                                    var truckId = truck.id;
+                                    var companyId = company.id;
+                                    var liveKey = '$companyId/$truckId';
+                                    bool isLive = liveStatuses.containsKey(liveKey);
+
+                                    // Filter logic
+                                    if (selectedFoodType == 'Live' && !isLive) {
+                                      return SizedBox.shrink(); // Skip rendering this truck if it's not live
+                                    } else if (selectedFoodType == 'Not Live' && isLive) {
+                                      return SizedBox.shrink(); // Skip rendering this truck if it's live
+                                    }
+
+                                    return Card(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                      elevation: 5,
+                                      color: Color.fromARGB(255, 216, 255, 206), // Card color
+                                      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                                      child: ListTile(
+                                        leading: Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 30,
+                                              backgroundImage: imageUrl.isNotEmpty
+                                                  ? NetworkImage(imageUrl)
+                                                  : AssetImage('assets/default_truck.png') as ImageProvider,
+                                              backgroundColor: Colors.grey[200],
+                                            ),
+                                          ],
+                                        ),
+                                        title: Text(
+                                          truck['name'],
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                        subtitle: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              description,
+                                              style: TextStyle(color: Colors.black),
+                                            ),
+                                            if (isLive)
+                                              Container(
+                                                margin: EdgeInsets.only(top: 5),
+                                                padding: EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red,
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  'Active',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white), // Add the arrow here
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => TruckDetailPage(companyId: company.id, truckId: truck.id),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  },
                                 );
-                              },
+                              }).toList(),
                             );
-                          }).toList(),
+                          },
                         );
                       },
                     );
@@ -393,7 +461,7 @@ class TruckDetailPage extends StatelessWidget {
                                   return ListTile(
                                     title: Text(item['name'], style: TextStyle(color: Colors.white)),
                                     subtitle: Text(item['description'], style: TextStyle(color: Colors.white)),
-                                    trailing: Text('\$${item['price']}.0', style: TextStyle(color: Colors.white)),
+                                    trailing: Text('\$${item['price']}', style: TextStyle(color: Colors.white)),
                                   );
                                 },
                               );
@@ -412,3 +480,4 @@ class TruckDetailPage extends StatelessWidget {
     );
   }
 }
+

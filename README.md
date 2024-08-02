@@ -1,14 +1,15 @@
 # TruckIt
-If unable to view this file correctly please refer to readme.pdf
+If unable to view this file correctly please refer to readme.pdf. 
 This entire folder can also be found at https://github.com/michaeltatwit/TruckItFinal which is identical.
 ## Locations
 - Code for customer app is located in TruckIt-Customer-App/lib
 - Code for driver app is located in TruckItDriver/truckit/lib
+- firebase_options.dart configuartion file located in same lib folders above
 - pubspec.yaml configuration file located in TruckItDriver/truckit/pubspec.yaml and TruckIt-Customer-App/pubspec.yaml
 - Podfile configuration file located in located in TruckItDriver/truckit/ios/Podfile and TruckIt-Customer-App/ios/Podfile
 - images of database located in images folder
-2 configuration files required for each as there are 1 in each app.
-
+- Note that2 configuration files required for each as there are 1 in each app.
+- The large number of other configuration files in each project are automatically included in flutter framework. These were left untouched as they allow the code to be ran on different devices, so it is unneccessary and frowned upon to edit these.
 Located in this README are the following:
 - Project Goals
 - Core components
@@ -81,6 +82,8 @@ Firebase was managed using Google's console at console.firebase.google.com which
 - iPhone 12 & iPhone 15 Pro (for development testing and presentation)
 
 ## Configuration Files
+### firebase_options.dart
+This configuation file is automatically generated to connect our application to the respective firebase project. This allows seamless use between our app and all of the cloud services used. Once the command "firebase configure" is ran, and the given steps are completed, the file is generated. It contains infromation such as appid, database url, projectid, and bundleid.
 ### pubspec.yaml 
 (located in TruckItDriver/truckit/pubspec.yaml)
 (also located in TruckIt-Customer-App/pubspec.yaml)

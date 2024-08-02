@@ -2,8 +2,8 @@
 If unable to view this file correctly please refer to readme.pdf. 
 This entire folder can also be found at https://github.com/michaeltatwit/TruckItFinal which is identical.
 ## Locations
-- Code for customer app is located in TruckIt-Customer-App/lib
-- Code for driver app is located in TruckItDriver/truckit/lib
+- Code for customer app is located in TruckIt-Customer-App/lib/
+- Code for driver app is located in TruckItDriver/truckit/lib/
 - firebase_options.dart configuartion file located in same lib folders above
 - pubspec.yaml configuration file located in TruckItDriver/truckit/pubspec.yaml and TruckIt-Customer-App/pubspec.yaml
 - Podfile configuration file located in located in TruckItDriver/truckit/ios/Podfile and TruckIt-Customer-App/ios/Podfile

@@ -10,13 +10,13 @@ This entire folder can also be found at https://github.com/michaeltatwit/TruckIt
 - images of database located in images folder
 - Note that2 configuration files required for each as there are 1 in each app.
 - The large number of other configuration files in each project are automatically included in flutter framework. These were left untouched as they allow the code to be ran on different devices, so it is unneccessary and frowned upon to edit these.
-Located in this README are the following:
-- Project Goals
-- Core components
-- Database components and Documentation
-- Notes 
-- Configuration
-- Some information is elaborated on in the Design Document.
+- Located in this README are the following:
+    - Project Goals
+    - Core components
+    - Database components and Documentation
+    - Notes 
+    - Configuration
+    - Some information is elaborated on in the Design Document.
 
 
 ## Project Goals

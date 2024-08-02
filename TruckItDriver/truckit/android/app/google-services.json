@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "117142809367",
+    "project_id": "truckit-e2b48",
+    "storage_bucket": "truckit-e2b48.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:117142809367:android:a953883a3a695ecca9a552",
+        "android_client_info": {
+          "package_name": "com.example.TruckIt"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAolP0DQpG-eIpizPV7GJlkRGQk1gm2hjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:117142809367:android:0b24a5f1c2072b83a9a552",
+        "android_client_info": {
+          "package_name": "com.example.truckitdebuggerrr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAolP0DQpG-eIpizPV7GJlkRGQk1gm2hjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:117142809367:android:65dec2001b5777eba9a552",
+        "android_client_info": {
+          "package_name": "com.example.truckittester"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAolP0DQpG-eIpizPV7GJlkRGQk1gm2hjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

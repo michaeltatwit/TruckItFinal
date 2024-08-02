@@ -1,5 +1,6 @@
 # TruckIt
 If unable to view this file correctly please refer to readme.pdf
+This entire folder can also be found at https://github.com/michaeltatwit/TruckItFinal which is identical.
 ## Locations
 - Code for customer app is located in TruckIt-Customer-App/lib
 - Code for driver app is located in TruckItDriver/truckit/lib
